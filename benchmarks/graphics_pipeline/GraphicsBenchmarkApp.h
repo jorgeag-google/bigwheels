@@ -219,6 +219,46 @@ static constexpr std::array<std::pair<int, int>, 8 + 9> kVRPerEyeResolutions = {
     {3680, 3140}, // Vision Pro, estimation from Wikipedia
 }};
 
+// To hold foveated rendering info
+
+
+struct FoveatedRenderingMode
+{
+    enum FRMode
+    {
+        NONE = 0,
+        VRS,
+        FDM,
+        FDM_SS,
+    };
+
+    FRMode mode;
+    bool   available;
+
+    FoveatedRenderingMode(const FRMode& m) : mode(m) {
+        available = false;
+    }
+};
+
+inline const char* ToString(FoveatedRenderingMode frm)
+{
+    switch (frm.mode) {
+        case FoveatedRenderingMode::FRMode::NONE : return "Disabled";
+        case FoveatedRenderingMode::FRMode::VRS: return "Variable Rate Shading";
+        case FoveatedRenderingMode::FRMode::FDM: return "Fragement density map";
+        case FoveatedRenderingMode::FRMode::FDM_SS: return "FDM with subsamples image";
+        default: return "?";
+    }
+}
+
+static std::array<FoveatedRenderingMode, 4> kFoveatedRenderingModes = {
+    FoveatedRenderingMode(FoveatedRenderingMode::FRMode::NONE),
+    FoveatedRenderingMode(FoveatedRenderingMode::FRMode::VRS),
+    FoveatedRenderingMode(FoveatedRenderingMode::FRMode::FDM),
+    FoveatedRenderingMode(FoveatedRenderingMode::FRMode::FDM_SS),
+};
+
+
 class GraphicsBenchmarkApp
     : public ppx::Application
 {
@@ -517,6 +557,8 @@ private:
     std::shared_ptr<KnobCheckbox>                      pBlitOffscreen;
     std::shared_ptr<KnobDropdown<grfx::Format>>        pFramebufferFormat;
     std::shared_ptr<KnobDropdown<std::pair<int, int>>> pResolution;
+
+    std::shared_ptr<KnobDropdown<FoveatedRenderingMode>>   pFoveatedRenderingMode;
 
 private:
     // =====================================================================
