@@ -173,6 +173,12 @@ void GraphicsBenchmarkApp::InitKnobs()
         pResolution->SetFlagDescription("Select the size of offscreen framebuffer.");
         pResolution->SetIndent(1);
     }
+
+    // Foveated Rendering Knobs
+    GetKnobManager().InitKnob(&pFoveatedRenderingMode, "foveated-rendering", 0, kFoveatedRenderingModes);
+    pFoveatedRenderingMode->SetDisplayName("Foveated Rendering");
+    pFoveatedRenderingMode->SetFlagDescription("Select Foveated rendering mode.");
+    pFoveatedRenderingMode->SetIndent(1);
 }
 
 void GraphicsBenchmarkApp::Config(ppx::ApplicationSettings& settings)
@@ -1077,7 +1083,7 @@ void GraphicsBenchmarkApp::Render()
         }
     }
 #endif
-
+    //PPX_LOG_INFO("Render mode: " << ToString(pFoveatedRenderingMode->GetValue()));
     uint32_t           imageIndex = UINT32_MAX;
     grfx::SwapchainPtr swapchain  = GetSwapchain(currentViewIndex);
 

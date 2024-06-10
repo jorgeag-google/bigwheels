@@ -219,6 +219,34 @@ static constexpr std::array<std::pair<int, int>, 8 + 9> kVRPerEyeResolutions = {
     {3680, 3140}, // Vision Pro, estimation from Wikipedia
 }};
 
+// To hold foveated rendering info
+enum class FoveatedRendering
+{
+    NONE = 0,
+    VRS,
+    FDM,
+    FDM_SS,
+};
+
+inline const char* ToString(FoveatedRendering vs)
+{
+    switch (vs) {
+        case FoveatedRendering::NONE: return "disabled";
+        case FoveatedRendering::VRS: return "Variable Rate Shading";
+        case FoveatedRendering::FDM: return "Fragement density map";
+        case FoveatedRendering::FDM_SS: return "FDM with subsamples image";
+        default: return "?";
+    }
+}
+
+static constexpr std::array<FoveatedRendering, 4> kFoveatedRenderingModes = {
+    FoveatedRendering::NONE,
+    FoveatedRendering::VRS,
+    FoveatedRendering::FDM,
+    FoveatedRendering::FDM_SS,
+};
+
+
 class GraphicsBenchmarkApp
     : public ppx::Application
 {
@@ -517,6 +545,8 @@ private:
     std::shared_ptr<KnobCheckbox>                      pBlitOffscreen;
     std::shared_ptr<KnobDropdown<grfx::Format>>        pFramebufferFormat;
     std::shared_ptr<KnobDropdown<std::pair<int, int>>> pResolution;
+
+    std::shared_ptr<KnobDropdown<FoveatedRendering>>   pFoveatedRenderingMode;
 
 private:
     // =====================================================================
