@@ -238,6 +238,40 @@ static constexpr std::array<DropdownEntry<grfx::BlendMode>, 3> kQuadBlendModes =
     {"disable_output", grfx::BLEND_MODE_DISABLE_OUTPUT},
 }};
 
+
+// Foveated rendering properities
+struct FoveatedRenderingMode
+{
+    grfx::ShadingRateMode mode;
+    bool                  subsampledImage;
+
+    FoveatedRenderingMode(const grfx::ShadingRateMode& m, bool ssi)
+        : mode(m), subsampledImage(ssi)
+    {
+        if (subsampledImage && mode != grfx::SHADING_RATE_FDM) {
+            subsampledImage = false;
+        }
+    }
+};
+
+inline const char* ToString(FoveatedRenderingMode frm)
+{
+    switch (frm.mode) {
+        case grfx::SHADING_RATE_NONE: return "Disabled";
+        case grfx::SHADING_RATE_VRS: return "Variable Rate Shading";
+        case grfx::SHADING_RATE_FDM: 
+            return frm.subsampledImage ? "FDM with subsamples image" : "Fragement density map";
+        default: return "?";
+    }
+}
+
+static std::array<FoveatedRenderingMode, 4> kFoveatedRenderingModes = {
+    FoveatedRenderingMode(grfx::SHADING_RATE_NONE, false),
+    FoveatedRenderingMode(grfx::SHADING_RATE_VRS, false),
+    FoveatedRenderingMode(grfx::SHADING_RATE_FDM, false),
+    FoveatedRenderingMode(grfx::SHADING_RATE_FDM, true),
+};
+
 class GraphicsBenchmarkApp
     : public ppx::Application
 {
@@ -554,6 +588,8 @@ private:
     std::shared_ptr<KnobDropdown<QuadViewportScale>> pKnobViewportHeightScale;
     std::shared_ptr<KnobDropdown<QuadViewportScale>> pKnobViewportWidthScale;
     std::shared_ptr<KnobDropdown<grfx::BlendMode>>   pKnobQuadBlendMode;
+
+    std::shared_ptr<FoveatedRenderingMode>           pFoveatedRenderingMode;
 
 private:
     // =====================================================================
