@@ -556,6 +556,9 @@ private:
     uint32_t mSkipRecordBandwidthMetricFrameCounter = 0;
 
     QuadPushConstant mQuadPushConstant;
+    // check if we are using foveation
+    bool mFoveatedRendring = false;
+    FoveatedRenderingMode mFoveatedRenderingMode;
 
 private:
     std::shared_ptr<KnobCheckbox>              pEnableSkyBox;
@@ -588,8 +591,6 @@ private:
     std::shared_ptr<KnobDropdown<QuadViewportScale>> pKnobViewportHeightScale;
     std::shared_ptr<KnobDropdown<QuadViewportScale>> pKnobViewportWidthScale;
     std::shared_ptr<KnobDropdown<grfx::BlendMode>>   pKnobQuadBlendMode;
-
-    std::shared_ptr<FoveatedRenderingMode>           pFoveatedRenderingMode;
 
 private:
     // =====================================================================

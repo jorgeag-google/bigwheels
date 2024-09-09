@@ -235,6 +235,15 @@ void GraphicsBenchmarkApp::Config(ppx::ApplicationSettings& settings)
 #endif
     settings.standardKnobsDefaultValue.enableMetrics        = true;
     settings.standardKnobsDefaultValue.overwriteMetricsFile = true;
+    // This might be not necesary, since in the original app they do not do it.
+    std::string shadingRatemode                             = GetStandardOptions().pShadingRateMode->GetValue();
+    if (shadingRatemode == "fdm") {
+        settings.grfx.device.supportShadingRateMode = grfx::SHADING_RATE_FDM;
+    }
+    else if (shadingRatemode == "vrs") {
+        settings.grfx.device.supportShadingRateMode = grfx::SHADING_RATE_VRS;
+    }
+    settings.grfx.device.supportShadingRateMode             = grfx::SHADING_RATE_NONE;
 }
 
 void GraphicsBenchmarkApp::Setup()
@@ -273,6 +282,25 @@ void GraphicsBenchmarkApp::Setup()
         createInfo.structuredBuffer               = 1;                                               // 1 for quads dummy buffer
 
         PPX_CHECKED_CALL(GetDevice()->CreateDescriptorPool(&createInfo, &mDescriptorPool));
+    }
+
+    // Setup foveation if enabled
+    {
+        const auto& capabilities = GetDevice()->GetShadingRateCapabilities();
+        if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_NONE) {
+            mFoveatedRenderingMode = kFoveatedRenderingModes[0];
+            mFoveatedRendring      = false;
+        }
+        else {
+            if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_VRS) {
+                mFoveatedRenderingMode = kFoveatedRenderingModes[1];
+            }
+            else if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_FDM) {
+                // TODO: We will need to detect if we use subsampled image
+                mFoveatedRenderingMode = kFoveatedRenderingModes[2];
+            }
+            mFoveatedRendring = true;
+        }
     }
 
     SetupSkyBoxResources();
