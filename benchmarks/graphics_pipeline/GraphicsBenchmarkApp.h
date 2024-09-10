@@ -252,6 +252,10 @@ struct FoveatedRenderingMode
             subsampledImage = false;
         }
     }
+
+    FoveatedRenderingMode()
+        : mode(grfx::SHADING_RATE_NONE), subsampledImage(false) {
+    }
 };
 
 inline const char* ToString(FoveatedRenderingMode frm)
