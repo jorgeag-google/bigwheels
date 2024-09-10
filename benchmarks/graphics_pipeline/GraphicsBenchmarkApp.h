@@ -269,13 +269,6 @@ inline const char* ToString(FoveatedRenderingMode frm)
     }
 }
 
-static std::array<FoveatedRenderingMode, 4> kFoveatedRenderingModes = {
-    FoveatedRenderingMode(grfx::SHADING_RATE_NONE, false),
-    FoveatedRenderingMode(grfx::SHADING_RATE_VRS, false),
-    FoveatedRenderingMode(grfx::SHADING_RATE_FDM, false),
-    FoveatedRenderingMode(grfx::SHADING_RATE_FDM, true),
-};
-
 class GraphicsBenchmarkApp
     : public ppx::Application
 {
@@ -561,7 +554,7 @@ private:
 
     QuadPushConstant mQuadPushConstant;
     // check if we are using foveation
-    bool mFoveatedRendring = false;
+    bool mFoveatedRendering = false;
     FoveatedRenderingMode mFoveatedRenderingMode;
 
 private:
