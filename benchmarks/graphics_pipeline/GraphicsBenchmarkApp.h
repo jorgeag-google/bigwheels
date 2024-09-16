@@ -239,26 +239,28 @@ static constexpr std::array<DropdownEntry<grfx::BlendMode>, 3> kQuadBlendModes =
 }};
 
 
-// Foveated rendering properities
-struct FoveatedRenderingMode
+// Foveated rendering properties
+struct FoveatedRenderingOptions
 {
     grfx::ShadingRateMode mode;
     bool                  subsampledImage;
+    grfx::SampleCount     sampleCount;
+    grfx::ShadingRatePatternPtr  shadingRatePattern;
 
-    FoveatedRenderingMode(const grfx::ShadingRateMode& m, bool ssi)
-        : mode(m), subsampledImage(ssi)
+    FoveatedRenderingOptions(const grfx::ShadingRateMode& m, bool ssi)
+        : mode(m), subsampledImage(ssi), sampleCount(grfx::SampleCount::SAMPLE_COUNT_1), shadingRatePattern(nullptr)
     {
         if (subsampledImage && mode != grfx::SHADING_RATE_FDM) {
             subsampledImage = false;
         }
     }
 
-    FoveatedRenderingMode()
-        : mode(grfx::SHADING_RATE_NONE), subsampledImage(false) {
+    FoveatedRenderingOptions()
+        : mode(grfx::SHADING_RATE_NONE), subsampledImage(false), sampleCount(grfx::SampleCount::SAMPLE_COUNT_1), shadingRatePattern(nullptr) {
     }
 };
 
-inline const char* ToString(FoveatedRenderingMode frm)
+inline const char* ToString(FoveatedRenderingOptions frm)
 {
     switch (frm.mode) {
         case grfx::SHADING_RATE_NONE: return "Disabled";
@@ -555,7 +557,7 @@ private:
     QuadPushConstant mQuadPushConstant;
     // check if we are using foveation
     bool mFoveatedRendering = false;
-    FoveatedRenderingMode mFoveatedRenderingMode;
+    FoveatedRenderingOptions mFoveatedRenderingMode;
 
 private:
     std::shared_ptr<KnobCheckbox>              pEnableSkyBox;
@@ -614,6 +616,9 @@ private:
     void SetupSkyBoxPipelines();
     void SetupSpheresPipelines();
     void SetupFullscreenQuadsPipelines();
+
+    // Setup foveation
+    void SetupFoveation();
 
     // Setup everything:
     // - Resources, vertex data and pipelines

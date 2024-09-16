@@ -16,6 +16,7 @@
 #include "SphereMesh.h"
 
 #include "ppx/graphics_util.h"
+#include "ppx/grfx/grfx_shading_rate_util.h"
 #include "ppx/grfx/grfx_enums.h"
 #include "ppx/grfx/grfx_format.h"
 #include "ppx/math_config.h"
@@ -275,25 +276,7 @@ void GraphicsBenchmarkApp::Setup()
         PPX_CHECKED_CALL(GetDevice()->CreateDescriptorPool(&createInfo, &mDescriptorPool));
     }
 
-    // Setup foveation if enabled
-    {
-        const auto& capabilities = GetDevice()->GetShadingRateCapabilities();
-        if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_NONE) {
-            mFoveatedRenderingMode = FoveatedRenderingMode(grfx::SHADING_RATE_NONE, false);
-            mFoveatedRendering      = false;
-        }
-        else {
-            if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_VRS) {
-                mFoveatedRenderingMode = FoveatedRenderingMode(grfx::SHADING_RATE_VRS, false);
-            }
-            else if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_FDM) {
-                // TODO: We will need to detect if we use subsampled image
-                mFoveatedRenderingMode = FoveatedRenderingMode(grfx::SHADING_RATE_FDM, false);
-            }
-            mFoveatedRendering = true;
-        }
-    }
-
+    SetupFoveation();
     SetupSkyBoxResources();
     SetupSkyBoxMeshes();
     SetupSkyBoxPipelines();
@@ -357,6 +340,43 @@ void GraphicsBenchmarkApp::Setup()
         OffscreenFrame frame = {};
         PPX_CHECKED_CALL(CreateOffscreenFrame(frame, RenderFormat(), GetSwapchain()->GetDepthFormat(), GetSwapchain()->GetWidth(), GetSwapchain()->GetHeight()));
         mOffscreenFrame.push_back(frame);
+    }
+}
+
+void GraphicsBenchmarkApp::SetupFoveation()
+{
+    const auto& capabilities = GetDevice()->GetShadingRateCapabilities();
+    // Query if foveation was enabled via CLI options (this is the only way to enable it for now)
+    if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_NONE) {
+        mFoveatedRenderingMode = FoveatedRenderingOptions(grfx::SHADING_RATE_NONE, false);
+        mFoveatedRendering      = false;
+    }
+    else {
+        if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_VRS) {
+            mFoveatedRenderingMode = FoveatedRenderingOptions(grfx::SHADING_RATE_VRS, false);
+        }
+        else if (capabilities.supportedShadingRateMode == grfx::SHADING_RATE_FDM) {
+            // TODO: We will need to detect if we use subsampled image
+            mFoveatedRenderingMode = FoveatedRenderingOptions(grfx::SHADING_RATE_FDM, false);
+        }
+        mFoveatedRendering = true;
+    }
+    // If foveation is enabled create a foveation pattern
+    if (mFoveatedRendering) {
+        grfx::ShadingRatePatternCreateInfo createInfo = {};
+        const bool         isOffscreen = pRenderOffscreen->GetValue();
+        const uint32_t     width       = isOffscreen ? mOffscreenFrame.back().width : GetSwapchain()->GetWidth();
+        const uint32_t     height      = isOffscreen ? mOffscreenFrame.back().height : GetSwapchain()->GetHeight();
+        createInfo.framebufferSize.width  = width;
+        createInfo.framebufferSize.height = height;
+        createInfo.shadingRateMode        = mFoveatedRenderingMode.mode;
+        createInfo.sampleCount            = mFoveatedRenderingMode.sampleCount;
+
+        PPX_CHECKED_CALL(GetDevice()->CreateShadingRatePattern(&createInfo, &mFoveatedRenderingMode.shadingRatePattern));
+        auto bitmap = mFoveatedRenderingMode.shadingRatePattern->CreateBitmap();
+
+        FillShadingRateRadial(mFoveatedRenderingMode.shadingRatePattern, 3.5, bitmap.get());
+        PPX_CHECKED_CALL(mFoveatedRenderingMode.shadingRatePattern->LoadFromBitmap(bitmap.get()));
     }
 }
 
