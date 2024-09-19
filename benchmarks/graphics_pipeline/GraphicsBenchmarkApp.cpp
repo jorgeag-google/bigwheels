@@ -761,6 +761,9 @@ Result GraphicsBenchmarkApp::CompilePipeline(const SkyBoxPipelineKey& key)
     gpCreateInfo.outputState.renderTargetFormats[0] = key.renderFormat;
     gpCreateInfo.outputState.depthStencilFormat     = GetSwapchain()->GetDepthFormat();
     gpCreateInfo.pPipelineInterface                 = mSkyBox.pipelineInterface;
+    if (mFoveatedRendering) {
+        gpCreateInfo.shadingRateMode = mFoveatedRenderingMode.mode;
+    }
 
     grfx::GraphicsPipelinePtr pipeline = nullptr;
     Result                    ppxres   = GetDevice()->CreateGraphicsPipeline(&gpCreateInfo, &pipeline);
@@ -808,6 +811,9 @@ Result GraphicsBenchmarkApp::CompilePipeline(const SpherePipelineKey& key)
     gpCreateInfo.outputState.renderTargetFormats[0] = key.renderFormat;
     gpCreateInfo.outputState.depthStencilFormat     = GetSwapchain()->GetDepthFormat();
     gpCreateInfo.pPipelineInterface                 = mSphere.pipelineInterface;
+    if (mFoveatedRendering) {
+        gpCreateInfo.shadingRateMode = mFoveatedRenderingMode.mode;
+    }
 
     grfx::GraphicsPipelinePtr pipeline = nullptr;
     Result                    ppxres   = GetDevice()->CreateGraphicsPipeline(&gpCreateInfo, &pipeline);
@@ -843,6 +849,9 @@ Result GraphicsBenchmarkApp::CompilePipeline(const QuadPipelineKey& key)
     gpCreateInfo.outputState.renderTargetFormats[0] = key.renderFormat;
     gpCreateInfo.outputState.depthStencilFormat     = GetSwapchain()->GetDepthFormat();
     gpCreateInfo.pPipelineInterface                 = mQuadsPipelineInterfaces[quadTypeIndex];
+    if (mFoveatedRendering) {
+        gpCreateInfo.shadingRateMode = mFoveatedRenderingMode.mode;
+    }
 
     grfx::GraphicsPipelinePtr pipeline = nullptr;
     Result                    ppxres   = GetDevice()->CreateGraphicsPipeline(&gpCreateInfo, &pipeline);
@@ -1562,6 +1571,9 @@ ppx::Result GraphicsBenchmarkApp::CreateOffscreenFrame(OffscreenFrame& frame, gr
         rpCreateInfo.renderTargetClearValues[0] = {{0.0f, 0.0f, 0.0f, 0.0f}};
         rpCreateInfo.depthStencilClearValue     = {1.0f, 0xFF};
         rpCreateInfo.ownership                  = grfx::OWNERSHIP_RESTRICTED;
+        if (mFoveatedRendering) {
+            rpCreateInfo.pShadingRatePattern = mFoveatedRenderingMode.shadingRatePattern;
+        }
 
         GetDevice()->CreateRenderPass(&rpCreateInfo, &renderpass.ptr);
     }
