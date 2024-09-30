@@ -689,8 +689,8 @@ void GraphicsBenchmarkApp::SetupFullscreenQuadsMeshes()
         // one large triangle covering entire screen area
         // position
         -1.0f, -1.0f, 0.0f,
-        -1.0f,  3.0f, 0.0f,
-         3.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
     };
     // clang-format on
     uint32_t dataSize = SizeInBytesU32(vertexData);
