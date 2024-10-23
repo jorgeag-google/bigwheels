@@ -589,7 +589,7 @@ void GraphicsBenchmarkApp::UpdateFullscreenQuadsDescriptors()
     uint32_t n = GetNumFramesInFlight();
     for (size_t i = 0; i < n; i++) {
         grfx::DescriptorSetPtr pDescriptorSet = mFullscreenQuads.descriptorSets[i];
-        for (uint32_t j = 0; j < pKnobTextureCount->GetValue(); j++) {
+        for (uint32_t j = 0; j < kMaxTextureCount; j++) {
             PPX_CHECKED_CALL(pDescriptorSet->UpdateSampledImage(QUADS_SAMPLED_IMAGE_REGISTER, j, mQuadsTextures[j]));
         }
         grfx::WriteDescriptor write  = {};
@@ -1798,17 +1798,14 @@ void GraphicsBenchmarkApp::RecordCommandBufferSpheres(PerFrame& frame)
 
 void GraphicsBenchmarkApp::RecordCommandBufferFullscreenQuad(PerFrame& frame, size_t seed)
 {
-    // Vertex shader push constant
-    {
-        mQuadPushConstant.InstCount = pKnobShaderAluLoopCount->GetValue();
-        frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_NOISE)], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
-        frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_SOLID_COLOR)], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
-        frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_TEXTURE)], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
-    }
-    switch (pFullscreenQuadsType->GetValue()) {
+    auto quadType = pFullscreenQuadsType->GetValue();
+    int  quadTypeIndex = static_cast<int>(quadType);
+    switch (quadType) {
         case FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_NOISE: {
+            mQuadPushConstant.InstCount  = pKnobShaderAluLoopCount->GetValue();
             mQuadPushConstant.RandomSeed = seed;
-            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(pFullscreenQuadsType->GetValue())], GetPushConstCount(mQuadPushConstant.RandomSeed), &mQuadPushConstant.RandomSeed, offsetof(QuadPushConstant, RandomSeed) / sizeof(uint32_t));
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.RandomSeed), &mQuadPushConstant.RandomSeed, offsetof(QuadPushConstant, RandomSeed) / sizeof(uint32_t));
             break;
         }
         case FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_SOLID_COLOR: {
@@ -1826,15 +1823,19 @@ void GraphicsBenchmarkApp::RecordCommandBufferFullscreenQuad(PerFrame& frame, si
             float3 colorValues = pFullscreenQuadsColor->GetValue();
             colorValues *= intensity;
             mQuadPushConstant.ColorValue = colorValues;
-            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(pFullscreenQuadsType->GetValue())], GetPushConstCount(mQuadPushConstant.ColorValue), &mQuadPushConstant.ColorValue, offsetof(QuadPushConstant, ColorValue) / sizeof(uint32_t));
+            mQuadPushConstant.InstCount  = pKnobShaderAluLoopCount->GetValue();
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.ColorValue), &mQuadPushConstant.ColorValue, offsetof(QuadPushConstant, ColorValue) / sizeof(uint32_t));
             break;
         }
         case FullscreenQuadsType::FULLSCREEN_QUADS_TYPE_TEXTURE:
             mQuadPushConstant.TextureCount = pKnobTextureCount->GetValue();
-            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[static_cast<int>(pFullscreenQuadsType->GetValue())], GetPushConstCount(mQuadPushConstant.TextureCount), &mQuadPushConstant.TextureCount, offsetof(QuadPushConstant, TextureCount) / sizeof(uint32_t));
+            mQuadPushConstant.InstCount    = pKnobShaderAluLoopCount->GetValue();
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.InstCount), &mQuadPushConstant.InstCount, offsetof(QuadPushConstant, InstCount) / sizeof(uint32_t));
+            frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[quadTypeIndex], GetPushConstCount(mQuadPushConstant.TextureCount), &mQuadPushConstant.TextureCount, offsetof(QuadPushConstant, TextureCount) / sizeof(uint32_t));
             break;
         default:
-            PPX_ASSERT_MSG(true, "unsupported FullscreenQuadsType: " << static_cast<int>(pFullscreenQuadsType->GetValue()));
+            PPX_ASSERT_MSG(true, "unsupported FullscreenQuadsType: " << quadTypeIndex);
             break;
     }
 
