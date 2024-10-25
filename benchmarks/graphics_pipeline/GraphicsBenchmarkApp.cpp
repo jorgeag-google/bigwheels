@@ -504,7 +504,7 @@ void GraphicsBenchmarkApp::SetupFullscreenQuadsResources()
     {
         // Large resolution image
         grfx_util::TextureOptions options = grfx_util::TextureOptions().MipLevelCount(1);
-        for (uint32_t i = 0; i < pKnobTextureCount->GetValue(); i++) {
+        for (uint32_t i = 0; i < kMaxTextureCount; i++) {
             // Load the same image.
             PPX_CHECKED_CALL(CreateTextureFromFile(GetDevice()->GetGraphicsQueue(), GetAssetPath(pQuadTextureFile->GetValue()), &mQuadsTextures[i], options));
         }
