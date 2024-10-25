@@ -17,6 +17,6 @@
 VSOutputPos vsmain(float4 Position : POSITION) {
   VSOutputPos result;
   result.position = Position;
-  result.position.z = randomCompute(Config.InstCount, result.position);
+  result.position.z = 0.0;
   return result;
 }
