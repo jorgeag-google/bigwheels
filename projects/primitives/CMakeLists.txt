@@ -15,6 +15,9 @@ project(primitives)
 
 add_samples_for_all_apis(
     NAME ${PROJECT_NAME}
-    SOURCES "main.cpp"
+    SOURCES 
+    "main.cpp"
+    "PrimitivesApp.h"
+    "PrimitivesApp.cpp"
     SHADER_DEPENDENCIES
     "shader_vertex_colors")
