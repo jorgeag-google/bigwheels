@@ -904,6 +904,20 @@ TriMesh TriMesh::CreateSphere(float radius, uint32_t usegs, uint32_t vsegs, cons
     return mesh;
 }
 
+TriMesh TriMesh::CreateCone(float height, float radius, uint32_t usegs, uint32_t vsegs, const TriMeshOptions& options)
+{
+    TriMesh mesh;
+
+    return mesh;
+}
+
+TriMesh TriMesh::CreateCylinder(float height, float radius, uint32_t usegs, uint32_t vsegs, const TriMeshOptions& options)
+{
+    TriMesh mesh;
+
+    return mesh;
+}
+
 Result TriMesh::CreateFromOBJ(const std::filesystem::path& path, const TriMeshOptions& options, TriMesh* pTriMesh)
 {
     if (IsNull(pTriMesh)) {

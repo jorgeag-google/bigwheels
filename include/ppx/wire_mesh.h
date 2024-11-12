@@ -111,6 +111,8 @@ public:
     static WireMesh CreatePlane(WireMeshPlane plane, const float2& size, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options = WireMeshOptions());
     static WireMesh CreateCube(const float3& size, const WireMeshOptions& options = WireMeshOptions());
     static WireMesh CreateSphere(float radius, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options = WireMeshOptions());
+    static WireMesh CreateCone(float height, float radius, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options = WireMeshOptions());
+    static WireMesh CreateCylinder(float height, float radius, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options = WireMeshOptions());
 
 private:
     void AppendIndexU16(uint16_t value);
