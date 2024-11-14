@@ -616,103 +616,194 @@ WireMesh WireMesh::CreateSphere(float radius, uint32_t usegs, uint32_t vsegs, co
 
 WireMesh WireMesh::CreateCone(float height, float radius, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options)
 {
-    WireMesh mesh;
+    PPX_ASSERT_MSG(height > 0.0f, "height must be a positive number");
+    PPX_ASSERT_MSG(radius > 0.0f, "radius must be a positive number");
+    PPX_ASSERT_MSG(usegs >= 3, "usegs must be at least 3");
+    PPX_ASSERT_MSG(vsegs > 0, "vsegs must be a positive number");
+
+    constexpr float kTAU = 2.0f * glm::pi<float>();
+
+    const float du = kTAU / static_cast<float>(usegs);
+    const float dv = height / static_cast<float>(vsegs);
+    const float dr = radius / static_cast<float>(vsegs);
+
+    std::vector<float>    vertexData;
+    std::vector<uint32_t> indexData;
+
+    // vertices
+    for (uint32_t j = 0; j < vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            float  theta         = i * du;
+            float  currentHeight = (j * dv) - (height / 2.0f);
+            float  x             = (1.0f - (j * dr)) * cos(theta);
+            float  z             = (1.0f - (j * dr)) * sin(theta);
+            float3 position      = float3(x, currentHeight, z);
+            float3 color         = float3(theta / kTAU, (j * dv) / height, 0);
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+        }
+    }
+    // Two extra vertexes: one for the apex and one for the cap
+    {
+        // lower cap
+        float3 position = float3(0.0f, -height / 2.0f, 0.0f);
+        float3 color    = float3(1.0f, 1.0f, 0.0f);
+        vertexData.push_back(position.x);
+        vertexData.push_back(position.y);
+        vertexData.push_back(position.z);
+        vertexData.push_back(color.r);
+        vertexData.push_back(color.g);
+        vertexData.push_back(color.b);
+
+        // apex
+        position = float3(0.0f, height / 2.0f, 0.0f);
+        color    = float3(1.0f, 1.0f, 0.0f);
+        vertexData.push_back(position.x);
+        vertexData.push_back(position.y);
+        vertexData.push_back(position.z);
+        vertexData.push_back(color.r);
+        vertexData.push_back(color.g);
+        vertexData.push_back(color.b);
+    }
+
+    // u segments
+    for (uint32_t j = 0; j < vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * usegs + i;
+            int index1 = j * usegs + ((i + 1) % usegs);
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+        }
+    }
+    // v segments
+    for (uint32_t j = 0; j < (vsegs - 1); ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * usegs + i;
+            int index1 = (j + 1) * usegs + i;
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+        }
+    }
+    // lower cap
+    for (uint32_t i = 0; i < usegs; ++i) {
+        int index0 = vsegs * usegs;
+        int index1 = i;
+        indexData.push_back(index0);
+        indexData.push_back(index1);
+    }
+    // upper cap
+    for (uint32_t i = 0; i < usegs; ++i) {
+        int index0 = vsegs * usegs + 1;
+        int index1 = (vsegs - 1 ) * usegs + i;
+        indexData.push_back(index0);
+        indexData.push_back(index1);
+    }
+    grfx::IndexType indexType = options.mEnableIndices ? grfx::INDEX_TYPE_UINT32 : grfx::INDEX_TYPE_UNDEFINED;
+    WireMesh        mesh      = WireMesh(indexType);
+
+    uint32_t expectedVertexCount = vsegs * usegs + 2;
+    AppendIndexAndVertexData(indexData, vertexData, expectedVertexCount, options, mesh);
 
     return mesh;
 }
 
 WireMesh WireMesh::CreateCylinder(float height, float radius, uint32_t usegs, uint32_t vsegs, const WireMeshOptions& options)
 {
-    constexpr float kTwoPi = 2.0f * glm::pi<float>();
+    PPX_ASSERT_MSG(height >  0.0f, "height must be a positive number");
+    PPX_ASSERT_MSG(radius >  0.0f, "radius must be a positive number");
+    PPX_ASSERT_MSG(usegs  >=   3 , "usegs must be at least 3");
+    PPX_ASSERT_MSG(vsegs  >    0 , "vsegs must be a positive number");
 
-    const uint32_t uverts = usegs + 1;
-    const uint32_t vverts = vsegs + 1;
+    constexpr float kTAU = 2.0f * glm::pi<float>();
 
-    const float dt = kTwoPi / static_cast<float>(usegs);
-    const float dp = height / static_cast<float>(vsegs);
+    const float du = kTAU / static_cast<float>(usegs);
+    const float dv = height / static_cast<float>(vsegs);
 
     std::vector<float>    vertexData;
     std::vector<uint32_t> indexData;
-    uint32_t              indexCount = 0;
-    // U segemnts
-    for (uint32_t j = 1; j < (vverts - 1); ++j) {
-        for (uint32_t i = 1; i < uverts; ++i) {
-            float  theta0    = (i - 1) * dt;
-            float  theta1    = (i - 0) * dt;
-            float  phi       = j * dp;
-            float  u0        = theta0 / kTwoPi;
-            float  u1        = theta1 / kTwoPi;
-            float  v         = phi / kPi;
-            float3 P0        = SphericalToCartesian(theta0, phi);
-            float3 P1        = SphericalToCartesian(theta1, phi);
-            float3 position0 = radius * P0;
-            float3 position1 = radius * P1;
-            float3 color0    = float3(u0, v, 0);
-            float3 color1    = float3(u1, v, 0);
 
-            vertexData.push_back(position0.x);
-            vertexData.push_back(position0.y);
-            vertexData.push_back(position0.z);
-            vertexData.push_back(color0.r);
-            vertexData.push_back(color0.g);
-            vertexData.push_back(color0.b);
+    // vertices
+    for (uint32_t j = 0; j <= vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            float  theta     = i * du;
+            float  currentHeight   = (j * dv) - (height / 2.0f);
+            float  x        = radius * cos(theta);
+            float  z        = radius * sin(theta);
+            float3 position       = float3(x, currentHeight, z);
+            float3 color          = float3(theta / kTAU, (j * dv) / height, 0);
 
-            vertexData.push_back(position1.x);
-            vertexData.push_back(position1.y);
-            vertexData.push_back(position1.z);
-            vertexData.push_back(color1.r);
-            vertexData.push_back(color1.g);
-            vertexData.push_back(color1.b);
-
-            indexData.push_back(indexCount);
-            indexCount += 1;
-            indexData.push_back(indexCount);
-            indexCount += 1;
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
         }
     }
-    // V segemnts
-    for (uint32_t i = 0; i < (uverts - 1); ++i) {
-        for (uint32_t j = 1; j < vverts; ++j) {
-            float  theta     = i * dt;
-            float  phi0      = (j - 0) * dp;
-            float  phi1      = (j - 1) * dp;
-            float  u         = theta / kTwoPi;
-            float  v0        = phi0 / kPi;
-            float  v1        = phi1 / kPi;
-            float3 P0        = SphericalToCartesian(theta, phi0);
-            float3 P1        = SphericalToCartesian(theta, phi1);
-            float3 position0 = radius * P0;
-            float3 position1 = radius * P1;
-            float3 color0    = float3(u, v0, 0);
-            float3 color1    = float3(u, v1, 0);
+    // Two extra vertexes for the cylinders caps
+    {
+        // lower cap
+        float3 position = float3(0.0f, -height / 2.0f, 0.0f);
+        float3 color    = float3(1.0f, 1.0f, 0.0f);
+        vertexData.push_back(position.x);
+        vertexData.push_back(position.y);
+        vertexData.push_back(position.z);
+        vertexData.push_back(color.r);
+        vertexData.push_back(color.g);
+        vertexData.push_back(color.b);
 
-            vertexData.push_back(position0.x);
-            vertexData.push_back(position0.y);
-            vertexData.push_back(position0.z);
-            vertexData.push_back(color0.r);
-            vertexData.push_back(color0.g);
-            vertexData.push_back(color0.b);
-
-            vertexData.push_back(position1.x);
-            vertexData.push_back(position1.y);
-            vertexData.push_back(position1.z);
-            vertexData.push_back(color1.r);
-            vertexData.push_back(color1.g);
-            vertexData.push_back(color1.b);
-
-            indexData.push_back(indexCount);
-            indexCount += 1;
-            indexData.push_back(indexCount);
-            indexCount += 1;
-        }
+        // upper cap
+        position = float3(0.0f, height / 2.0f, 0.0f);
+        color    = float3(1.0f, 1.0f, 0.0f);
+        vertexData.push_back(position.x);
+        vertexData.push_back(position.y);
+        vertexData.push_back(position.z);
+        vertexData.push_back(color.r);
+        vertexData.push_back(color.g);
+        vertexData.push_back(color.b);
     }
 
+    // u segments
+    for (uint32_t j = 0; j <= vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * usegs + i;
+            int index1 = j * usegs + ((i + 1) % usegs);
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+        }
+    }
+    // v segments
+    for (uint32_t j = 0; j < vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * usegs + i;
+            int index1 = (j + 1) * usegs + i;
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+        }
+    }
+    // lower cap
+    for (uint32_t i = 0; i < usegs; ++i) {
+        int index0 = (vsegs + 1) * usegs;
+        int index1 = i;
+        indexData.push_back(index0);
+        indexData.push_back(index1);
+    }
+    // upper cap
+    for (uint32_t i = 0; i < usegs; ++i) {
+        int index0 = (vsegs + 1) * usegs + 1;
+        int index1 = (vsegs * usegs) + i;
+        indexData.push_back(index0);
+        indexData.push_back(index1);
+    }
     grfx::IndexType indexType = options.mEnableIndices ? grfx::INDEX_TYPE_UINT32 : grfx::INDEX_TYPE_UNDEFINED;
     WireMesh        mesh      = WireMesh(indexType);
 
-    uint32_t expectedVertexCountU = (uverts - 1) * (vverts - 2);
-    uint32_t expectedVertexCountV = (uverts - 1) * (vverts - 1);
-    uint32_t expectedVertexCount  = 2 * (expectedVertexCountU + expectedVertexCountV);
+    uint32_t expectedVertexCount  = (vsegs + 1) * usegs + 2;
     AppendIndexAndVertexData(indexData, vertexData, expectedVertexCount, options, mesh);
 
     return mesh;

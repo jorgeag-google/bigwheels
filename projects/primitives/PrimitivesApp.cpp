@@ -96,7 +96,7 @@ void PrimitivesApp::Setup()
         TriMesh triMesh = TriMesh::CreateCube(float3(2, 2, 2), triMeshOptions);
         SetupEntity(triMesh, geometryCreateInfo, &mCube);
 
-        triMesh = TriMesh::CreateSphere(1.0f, 16, 8, triMeshOptions);
+        triMesh = TriMesh::CreateCone(2.0f, 1.0f, 16, 1, triMeshOptions);
         SetupEntity(triMesh, geometryCreateInfo, &mSphere);
 
         triMesh = TriMesh::CreatePlane(TRI_MESH_PLANE_POSITIVE_Y, float2(2, 2), 1, 1, triMeshOptions);
@@ -105,7 +105,7 @@ void PrimitivesApp::Setup()
         WireMesh wireMesh = WireMesh::CreateCube(float3(2, 2, 2), wireMeshOptions);
         SetupEntity(wireMesh, geometryCreateInfo, &mWireCube);
 
-        wireMesh = WireMesh::CreateSphere(1.0f, 16, 8, wireMeshOptions);
+        wireMesh = WireMesh::CreateCone(2.0f, 1.0f, 3, 2, wireMeshOptions);
         SetupEntity(wireMesh, geometryCreateInfo, &mWireSphere);
 
         wireMesh = WireMesh::CreatePlane(WIRE_MESH_PLANE_POSITIVE_Y, float2(2, 2), 4, 4, wireMeshOptions);

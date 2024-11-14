@@ -906,14 +906,373 @@ TriMesh TriMesh::CreateSphere(float radius, uint32_t usegs, uint32_t vsegs, cons
 
 TriMesh TriMesh::CreateCone(float height, float radius, uint32_t usegs, uint32_t vsegs, const TriMeshOptions& options)
 {
-    TriMesh mesh;
+    PPX_ASSERT_MSG(height > 0.0f, "height must be a positive number");
+    PPX_ASSERT_MSG(radius > 0.0f, "radius must be a positive number");
+    PPX_ASSERT_MSG(usegs >= 3, "usegs must be at least 3");
+    PPX_ASSERT_MSG(vsegs > 0, "vsegs must be a positive number");
+
+    constexpr float kTAU = 2.0f * glm::pi<float>();
+
+    const float du = kTAU / static_cast<float>(usegs);
+    const float dv = height / static_cast<float>(vsegs);
+    const float dr = radius / static_cast<float>(vsegs);
+
+    std::vector<float> vertexData;
+    // vertices
+    for (uint32_t j = 0; j <= vsegs; ++j) {
+        for (uint32_t i = 0; i <= usegs; ++i) {
+            float  theta         = i * du;
+            float  currentHeight = (j * dv) - (height / 2.0f);
+            float  x             = (1.0f - (j * dr)) * cos(theta);
+            float  z             = (1.0f - (j * dr)) * sin(theta);
+            float3 position      = float3(x, currentHeight, z);
+            float3 color         = float3(theta / kTAU, (j * dv) / height, 0);
+            float3 normal        = normalize(float3(x, height / radius, z));
+            float2 texcoord      = float2(theta / kTAU, (j * dv) / height);
+            float4 tangent       = float4(normalize(float3(z, 0.0f, -x)), 1.0);
+            float3 bitangent     = glm::cross(normal, float3(tangent));
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+            vertexData.push_back(normal.x);
+            vertexData.push_back(normal.y);
+            vertexData.push_back(normal.z);
+            vertexData.push_back(texcoord.x);
+            vertexData.push_back(texcoord.y);
+            vertexData.push_back(tangent.x);
+            vertexData.push_back(tangent.y);
+            vertexData.push_back(tangent.z);
+            vertexData.push_back(tangent.w);
+            vertexData.push_back(bitangent.x);
+            vertexData.push_back(bitangent.y);
+            vertexData.push_back(bitangent.z);
+        }
+    }
+    // triangles
+    std::vector<uint32_t> indexData;
+    for (uint32_t j = 0; j < vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * (usegs + 1) + i;
+            int index1 = j * (usegs + 1) + (i + 1);
+            int index2 = (j + 1) * (usegs + 1) + i;
+            int index3 = (j + 1) * (usegs + 1) + (i + 1);
+
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+            indexData.push_back(index3);
+
+            indexData.push_back(index0);
+            indexData.push_back(index3);
+            indexData.push_back(index2);
+        }
+    }
+
+    // lower cap
+    {
+        // lower cap vertices
+        for (uint32_t i = 0; i < usegs; ++i) {
+            float  theta     = i * du;
+            float  x         = radius * cos(theta);
+            float  z         = radius * sin(theta);
+            float3 position  = float3(x, -(height / 2.0f), z);
+            float3 color     = float3((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius), 0.0f);
+            float3 normal    = float3(0.0f, -1.0f, 0.0f);
+            float2 texcoord  = float2((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius));
+            float4 tangent   = float4(0.0f, 0.0f, -1.0f, 1.0f);
+            float3 bitangent = glm::cross(normal, float3(tangent));
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+            vertexData.push_back(normal.x);
+            vertexData.push_back(normal.y);
+            vertexData.push_back(normal.z);
+            vertexData.push_back(texcoord.x);
+            vertexData.push_back(texcoord.y);
+            vertexData.push_back(tangent.x);
+            vertexData.push_back(tangent.y);
+            vertexData.push_back(tangent.z);
+            vertexData.push_back(tangent.w);
+            vertexData.push_back(bitangent.x);
+            vertexData.push_back(bitangent.y);
+            vertexData.push_back(bitangent.z);
+        }
+        // cap center
+        float3 position  = float3(0.0f, -(height / 2.0f), 0.0f);
+        float3 color     = float3(0.5f, 0.5f, 0.0f);
+        float3 normal    = float3(0.0f, -1.0f, 0.0f);
+        float2 texcoord  = float2(0.5f, 0.5f);
+        float4 tangent   = float4(0.0f, 0.0f, -1.0f, 1.0f);
+        float3 bitangent = glm::cross(normal, float3(tangent));
+
+        vertexData.push_back(position.x);
+        vertexData.push_back(position.y);
+        vertexData.push_back(position.z);
+        vertexData.push_back(color.r);
+        vertexData.push_back(color.g);
+        vertexData.push_back(color.b);
+        vertexData.push_back(normal.x);
+        vertexData.push_back(normal.y);
+        vertexData.push_back(normal.z);
+        vertexData.push_back(texcoord.x);
+        vertexData.push_back(texcoord.y);
+        vertexData.push_back(tangent.x);
+        vertexData.push_back(tangent.y);
+        vertexData.push_back(tangent.z);
+        vertexData.push_back(tangent.w);
+        vertexData.push_back(bitangent.x);
+        vertexData.push_back(bitangent.y);
+        vertexData.push_back(bitangent.z);
+        // lower cap triangles
+        const int startCapIndex  = (vsegs + 1) * (usegs + 1);
+        const int capCenterIndex = startCapIndex + usegs;
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = startCapIndex + i;
+            int index1 = startCapIndex + ((i + 1) % usegs);
+
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+            indexData.push_back(capCenterIndex);
+        }
+    } // lower cap
+
+    grfx::IndexType     indexType   = options.mEnableIndices ? grfx::INDEX_TYPE_UINT32 : grfx::INDEX_TYPE_UNDEFINED;
+    TriMeshAttributeDim texCoordDim = options.mEnableTexCoords ? TRI_MESH_ATTRIBUTE_DIM_2 : TRI_MESH_ATTRIBUTE_DIM_UNDEFINED;
+    TriMesh             mesh        = TriMesh(indexType, texCoordDim);
+
+    uint32_t expectedVertexCount = (vsegs + 1) * (usegs + 1) + (usegs + 1);
+    AppendIndexAndVertexData(indexData, vertexData, expectedVertexCount, options, mesh);
 
     return mesh;
 }
 
 TriMesh TriMesh::CreateCylinder(float height, float radius, uint32_t usegs, uint32_t vsegs, const TriMeshOptions& options)
 {
-    TriMesh mesh;
+    PPX_ASSERT_MSG(height > 0.0f, "height must be a positive number");
+    PPX_ASSERT_MSG(radius > 0.0f, "radius must be a positive number");
+    PPX_ASSERT_MSG(usegs >= 3, "usegs must be at least 3");
+    PPX_ASSERT_MSG(vsegs > 0, "vsegs must be a positive number");
+
+    constexpr float kTAU = 2.0f * glm::pi<float>();
+
+    const float du = kTAU / static_cast<float>(usegs);
+    const float dv = height / static_cast<float>(vsegs);
+
+    std::vector<float> vertexData;
+    // vertices
+    for (uint32_t j = 0; j <= vsegs; ++j) {
+        for (uint32_t i = 0; i <= usegs; ++i) {
+            float  theta         = i * du;
+            float  currentHeight = (j * dv) - (height / 2.0f);
+            float  x             = radius * cos(theta);
+            float  z             = radius * sin(theta);
+            float3 position      = float3(x, currentHeight, z);
+            float3 color         = float3(theta / kTAU, (j * dv) / height, 0);
+            float3 normal        = normalize(float3(x, 0.0f, z));
+            float2 texcoord      = float2(theta / kTAU, (j * dv) / height);
+            float4 tangent       = float4(normalize(float3(z, 0.0f, -x)), 1.0);
+            float3 bitangent     = glm::cross(normal, float3(tangent));
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+            vertexData.push_back(normal.x);
+            vertexData.push_back(normal.y);
+            vertexData.push_back(normal.z);
+            vertexData.push_back(texcoord.x);
+            vertexData.push_back(texcoord.y);
+            vertexData.push_back(tangent.x);
+            vertexData.push_back(tangent.y);
+            vertexData.push_back(tangent.z);
+            vertexData.push_back(tangent.w);
+            vertexData.push_back(bitangent.x);
+            vertexData.push_back(bitangent.y);
+            vertexData.push_back(bitangent.z);
+        }
+    }
+    // triangles
+    std::vector<uint32_t> indexData;
+    for (uint32_t j = 0; j < vsegs; ++j) {
+        for (uint32_t i = 0; i < usegs; ++i) {
+            int index0 = j * (usegs + 1) + i;
+            int index1 = j * (usegs + 1) + (i + 1);
+            int index2 = (j + 1) * (usegs + 1) + i;
+            int index3 = (j + 1) * (usegs + 1) + (i + 1);
+
+            indexData.push_back(index0);
+            indexData.push_back(index1);
+            indexData.push_back(index3);
+
+            indexData.push_back(index0);
+            indexData.push_back(index3);
+            indexData.push_back(index2);
+        }
+    }
+
+    // caps
+    {
+        // lower cap
+        {
+            // lower cap vertices
+            for (uint32_t i = 0; i < usegs; ++i) {
+                float  theta     = i * du;
+                float  x         = radius * cos(theta);
+                float  z         = radius * sin(theta);
+                float3 position  = float3(x, -(height / 2.0f), z);
+                float3 color     = float3((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius), 0.0f);
+                float3 normal    = float3(0.0f, -1.0f, 0.0f);
+                float2 texcoord  = float2((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius));
+                float4 tangent   = float4(0.0f, 0.0f, -1.0f, 1.0f);
+                float3 bitangent = glm::cross(normal, float3(tangent));
+
+                vertexData.push_back(position.x);
+                vertexData.push_back(position.y);
+                vertexData.push_back(position.z);
+                vertexData.push_back(color.r);
+                vertexData.push_back(color.g);
+                vertexData.push_back(color.b);
+                vertexData.push_back(normal.x);
+                vertexData.push_back(normal.y);
+                vertexData.push_back(normal.z);
+                vertexData.push_back(texcoord.x);
+                vertexData.push_back(texcoord.y);
+                vertexData.push_back(tangent.x);
+                vertexData.push_back(tangent.y);
+                vertexData.push_back(tangent.z);
+                vertexData.push_back(tangent.w);
+                vertexData.push_back(bitangent.x);
+                vertexData.push_back(bitangent.y);
+                vertexData.push_back(bitangent.z);
+            }
+            // cap center
+            float3 position  = float3(0.0f, -(height / 2.0f), 0.0f);
+            float3 color     = float3(0.5f, 0.5f, 0.0f);
+            float3 normal    = float3(0.0f, -1.0f, 0.0f);
+            float2 texcoord  = float2(0.5f, 0.5f);
+            float4 tangent   = float4(0.0f, 0.0f, -1.0f, 1.0f);
+            float3 bitangent = glm::cross(normal, float3(tangent));
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+            vertexData.push_back(normal.x);
+            vertexData.push_back(normal.y);
+            vertexData.push_back(normal.z);
+            vertexData.push_back(texcoord.x);
+            vertexData.push_back(texcoord.y);
+            vertexData.push_back(tangent.x);
+            vertexData.push_back(tangent.y);
+            vertexData.push_back(tangent.z);
+            vertexData.push_back(tangent.w);
+            vertexData.push_back(bitangent.x);
+            vertexData.push_back(bitangent.y);
+            vertexData.push_back(bitangent.z);
+            // lower cap triangles
+            const int startCapIndex  = (vsegs + 1) * (usegs + 1);
+            const int capCenterIndex = startCapIndex + usegs;
+            for (uint32_t i = 0; i < usegs; ++i) {
+                int index0 = startCapIndex + i;
+                int index1 = startCapIndex + ((i + 1) % usegs);
+
+                indexData.push_back(index0);
+                indexData.push_back(index1);
+                indexData.push_back(capCenterIndex);
+            }
+        } // lower cap
+        
+        // upper caps
+        {
+            // upper cap vertices
+            for (uint32_t i = 0; i < usegs; ++i) {
+                float  theta     = i * du;
+                float  x         = radius * cos(theta);
+                float  z         = radius * sin(theta);
+                float3 position  = float3(x, height / 2.0f, z);
+                float3 color     = float3((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius), 0.0f);
+                float3 normal    = float3(0.0f, 1.0f, 0.0f);
+                float2 texcoord  = float2((x + radius) / (2.0f * radius), (z + radius) / (2.0f * radius));
+                float4 tangent   = float4(0.0f, 0.0f, 1.0f, 1.0f);
+                float3 bitangent = glm::cross(normal, float3(tangent));
+
+                vertexData.push_back(position.x);
+                vertexData.push_back(position.y);
+                vertexData.push_back(position.z);
+                vertexData.push_back(color.r);
+                vertexData.push_back(color.g);
+                vertexData.push_back(color.b);
+                vertexData.push_back(normal.x);
+                vertexData.push_back(normal.y);
+                vertexData.push_back(normal.z);
+                vertexData.push_back(texcoord.x);
+                vertexData.push_back(texcoord.y);
+                vertexData.push_back(tangent.x);
+                vertexData.push_back(tangent.y);
+                vertexData.push_back(tangent.z);
+                vertexData.push_back(tangent.w);
+                vertexData.push_back(bitangent.x);
+                vertexData.push_back(bitangent.y);
+                vertexData.push_back(bitangent.z);
+            }
+            // upper cap center
+            float3 position  = float3(0.0f, height / 2.0f, 0.0f);
+            float3 color     = float3(0.5f, 0.5f, 0.0f);
+            float3 normal    = float3(0.0f, 1.0f, 0.0f);
+            float2 texcoord  = float2(0.5f, 0.5f);
+            float4 tangent   = float4(0.0f, 0.0f, 1.0f, 1.0f);
+            float3 bitangent = glm::cross(normal, float3(tangent));
+
+            vertexData.push_back(position.x);
+            vertexData.push_back(position.y);
+            vertexData.push_back(position.z);
+            vertexData.push_back(color.r);
+            vertexData.push_back(color.g);
+            vertexData.push_back(color.b);
+            vertexData.push_back(normal.x);
+            vertexData.push_back(normal.y);
+            vertexData.push_back(normal.z);
+            vertexData.push_back(texcoord.x);
+            vertexData.push_back(texcoord.y);
+            vertexData.push_back(tangent.x);
+            vertexData.push_back(tangent.y);
+            vertexData.push_back(tangent.z);
+            vertexData.push_back(tangent.w);
+            vertexData.push_back(bitangent.x);
+            vertexData.push_back(bitangent.y);
+            vertexData.push_back(bitangent.z);
+
+            // upper cap triangles
+            const int startCapIndex  = (vsegs + 1) * (usegs + 1) + (usegs + 1);
+            const int capCenterIndex = startCapIndex + usegs;
+            for (uint32_t i = 0; i < usegs; ++i) {
+                int index0 = startCapIndex + i;
+                int index1 = startCapIndex + ((i + 1) % usegs);
+
+                indexData.push_back(index0);
+                indexData.push_back(index1);
+                indexData.push_back(capCenterIndex);
+            }
+        } // upper cap
+    } // caps
+
+    grfx::IndexType     indexType   = options.mEnableIndices ? grfx::INDEX_TYPE_UINT32 : grfx::INDEX_TYPE_UNDEFINED;
+    TriMeshAttributeDim texCoordDim = options.mEnableTexCoords ? TRI_MESH_ATTRIBUTE_DIM_2 : TRI_MESH_ATTRIBUTE_DIM_UNDEFINED;
+    TriMesh             mesh        = TriMesh(indexType, texCoordDim);
+
+    uint32_t expectedVertexCount = (vsegs + 1) * (usegs + 1) + 2.0f * (usegs + 1);
+    AppendIndexAndVertexData(indexData, vertexData, expectedVertexCount, options, mesh);
 
     return mesh;
 }
